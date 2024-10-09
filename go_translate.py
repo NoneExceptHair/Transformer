@@ -6,7 +6,7 @@ import argparse
 import time
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--model", type=str, default="transformer-6-5-2-ckpt-50", help="model name")
+parser.add_argument("--model", type=str, default="transformer-6-5-2-best", help="model name")
 parser.add_argument("--fre", type=int, default=2, help="min frequencies of words in vocabulary")
 parser.add_argument("--mode", type=str, default="greedy", help="greedy search or beam search")
 
@@ -16,6 +16,11 @@ SEED = 42
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
+
+# 指定使用第二张 GPU
+torch.cuda.set_device(1)
+device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+
 model_pth = "./models/"
 if not os.path.exists(model_pth):
     os.mkdir(model_pth)
@@ -47,7 +52,7 @@ en_vocab = build_vocab(train_filepaths[0], en_tokenizer, min_freq=args.fre)
 BOS_IDX = en_vocab['<bos>']
 EOS_IDX = en_vocab['<eos>']
 
-device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+
 
 '''load test'''
 with open(test_filepaths[0], 'r', encoding='utf8') as f:
