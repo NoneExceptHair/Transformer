@@ -1,0 +1,10 @@
+cuda
+train size: 29000
+val size: 1014
+test size: 1000
+de vocab size: 7853
+en vocab size: 5893
+The model has 55,207,085 trainable parameters
+平均BLEU得分: 6128.529140377932
+speed time: 13.97409987449646
+throught 843.7037165819482

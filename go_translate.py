@@ -3,10 +3,11 @@ from torchtext.data.utils import get_tokenizer
 from src.utils import *
 import os
 import argparse
+import time
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--model", type=str, default="transformer-6-5-1-best", help="model name")
-parser.add_argument("--fre", type=int, default=3, help="min frequencies of words in vocabulary")
+parser.add_argument("--model", type=str, default="transformer-6-5-2-ckpt-50", help="model name")
+parser.add_argument("--fre", type=int, default=2, help="min frequencies of words in vocabulary")
 parser.add_argument("--mode", type=str, default="greedy", help="greedy search or beam search")
 
 args = parser.parse_args()
@@ -22,23 +23,31 @@ model_name = args.model
 model = torch.load(model_pth + model_name + ".pth.tar")
 model.eval()
 
-pth_base = "./.data/multi30k/task1/raw/"
-train_pths = ('train.de', 'train.en')
-val_pths = ('val.de', 'val.en')
-test_pths = ('test_2016_flickr.de', 'test_2016_flickr.en')
+# pth_base = "./.data/multi30k/task1/raw/"
+# train_pths = ('train.en', 'train.de')
+# val_pths = ('val.en', 'val.de')
+# test_pths = ('test_2016_flickr.en', 'test_2016_flickr.de')
+
+
+data_len = 256 # 数据长度
+pth_base = '/home/nx/ycy/GraphLLM/data/iwslt/tokenized/'
+train_pths = ("{}_train.en".format(data_len), "{}_train.de".format(data_len))
+val_pths = ("{}_valid.en".format(data_len), "{}_valid.de".format(data_len))
+test_pths = ("{}_test.en".format(data_len), "{}_test.de".format(data_len))
+
 train_filepaths = [(pth_base + pth) for pth in train_pths]
 test_filepaths = [(pth_base + pth) for pth in test_pths]
 
 de_tokenizer = get_tokenizer('spacy', language='de_core_news_sm')
 en_tokenizer = get_tokenizer('spacy', language='en_core_web_sm')
 
-de_vocab = build_vocab(train_filepaths[0], de_tokenizer, min_freq=args.fre)
-en_vocab = build_vocab(train_filepaths[1], en_tokenizer, min_freq=args.fre)
+de_vocab = build_vocab(train_filepaths[1], de_tokenizer, min_freq=args.fre)
+en_vocab = build_vocab(train_filepaths[0], en_tokenizer, min_freq=args.fre)
 
-BOS_IDX = de_vocab['<bos>']
-EOS_IDX = de_vocab['<eos>']
+BOS_IDX = en_vocab['<bos>']
+EOS_IDX = en_vocab['<eos>']
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
 '''load test'''
 with open(test_filepaths[0], 'r', encoding='utf8') as f:
@@ -58,9 +67,34 @@ with open("reference.txt",'w+') as f:
 
 '''make predictions'''
 predictions = []
+total_tokens = 0
+start_time=time.time()
 for data in test_data:
-    temp_trans = translate(model, data.lower(), de_vocab, en_vocab, de_tokenizer, BOS_IDX, EOS_IDX, args.mode, device)
+    num_tokens,temp_trans = translate(model, data.lower(), en_vocab, de_vocab, en_tokenizer, BOS_IDX, EOS_IDX, args.mode, device)
     predictions.append(temp_trans+"\n")
+    total_tokens+=num_tokens
+end_time = time.time()
+spend_time = end_time - start_time
+throughput = total_tokens / spend_time
+print("throught:{}tokens/s".format(throughput))
+bleu1_scores = []
+bleu2_scores = []
+spend_time = end_time - start_time
+# throughput = token_total / spend_time
+for ref_sentence, hyp_sentence in zip(reference, predictions):
+    ref_tokens = nltk.word_tokenize(ref_sentence)
+    hyp_tokens = nltk.word_tokenize(hyp_sentence)
+    bleu_score = sentence_bleu([ref_tokens], hyp_tokens)
+    bleu1_scores.append(bleu_score)
+
+    ref_tokens = [de_vocab[word] for word in ref_sentence.split()]
+    hyp_tokens = [de_vocab[word] for word in hyp_sentence.split()]
+    bleu_score = sentence_bleu([ref_tokens], hyp_tokens)
+    bleu2_scores.append(bleu_score)
+average_bleu1 = np.mean(bleu1_scores)
+average_bleu2 = np.mean(bleu2_scores)
+print("平均 nltk BLEU得分:", average_bleu1 * 100)
+print("平均 vocab BLEU得分:", average_bleu2 * 100)
 
 '''update predictions.txt'''
 with open("predictions.txt",'w+') as f:

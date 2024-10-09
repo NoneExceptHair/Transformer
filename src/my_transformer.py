@@ -224,6 +224,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pos_embedding', pos_embedding)
 
     def forward(self, token_embedding):
+        # print("sssssssssss",token_embedding.shape,self.pos_embedding.shape)   
         return self.dropout(token_embedding +  self.pos_embedding[:token_embedding.size(0),:])
 
     
