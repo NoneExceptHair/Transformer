@@ -145,7 +145,6 @@ def evaluate(model, val_iter, loss_fn, device, de_vocab, en_vocab):
         bleu_score = sentence_bleu([ref_tokens], hyp_tokens)
         bleu2_scores.append(bleu_score)
 
-
     average_bleu1 = np.mean(bleu1_scores)
     average_bleu2 = np.mean(bleu2_scores)
     print("平均 nltk BLEU得分:", average_bleu1 * 100)

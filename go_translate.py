@@ -5,8 +5,8 @@ import os
 import argparse
 import time
 parser = argparse.ArgumentParser()
-
-parser.add_argument("--model", type=str, default="256-transformer-best", help="model name")
+data_len = 256
+parser.add_argument("--model", type=str, default="{}_transformer-best_valid_loss".format(data_len), help="model name")
 parser.add_argument("--fre", type=int, default=2, help="min frequencies of words in vocabulary")
 parser.add_argument("--mode", type=str, default="greedy", help="greedy search or beam search")
 
@@ -42,7 +42,7 @@ model.eval()
 # de_vocab = build_vocab(train_filepaths[1], de_tokenizer, min_freq=args.fre)
 # en_vocab = build_vocab(train_filepaths[0], en_tokenizer, min_freq=args.fre)
 
-data_len = 256 # 数据长度
+
 pth_base = '/home/nx/ycy/GraphLLM/data/iwslt/tokenized/'
 train_pths = ("{}_train.en".format(data_len), "{}_train.de".format(data_len))
 val_pths = ("{}_valid.en".format(data_len), "{}_valid.de".format(data_len))

@@ -23,7 +23,7 @@ parser.add_argument(
     "--head", type=int, default=8, help="head numbers of multihead attention layer"
 )
 parser.add_argument("--dropout", type=float, default=0.1, help="dropout rate")
-parser.add_argument("--epoch", type=int, default=100, help="training epoch numbers")
+parser.add_argument("--epoch", type=int, default=200, help="training epoch numbers")
 parser.add_argument("--lr", type=float, default=0.0001, help="learning rate")
 parser.add_argument(
     "--fre", type=int, default=2, help="min frequencies of words in vocabulary"
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     # train_pths = ("train.en", "train.de")
     # val_pths = ("val.en", "val.de")
     # test_pths = ("test_2016_flickr.en", "test_2016_flickr.de")
-    # 
+    
     # train_filepaths = [(pth_base + pth) for pth in train_pths]
     # val_filepaths = [(pth_base + pth) for pth in val_pths]
     # test_filepaths = [(pth_base + pth) for pth in test_pths]
@@ -80,7 +80,6 @@ if __name__ == "__main__":
     train_filepaths = [(pth_base + pth) for pth in train_pths]
     val_filepaths = [(pth_base + pth) for pth in val_pths]
     test_filepaths = [(pth_base + pth) for pth in test_pths]
-    # vocab_filepaths = [(pth_base + pth) for pth in vocab_pths]
 
     en_tokenizer = get_tokenizer("spacy", language="en_core_web_sm")
     de_tokenizer = get_tokenizer("spacy", language="de_core_news_sm")
@@ -154,6 +153,7 @@ if __name__ == "__main__":
     train_acc_list = []
     val_acc_list = []
     min_val_loss = 999
+    min_train_loss = 999
     # steps = 1
 
     for epoch in range(1, NUM_EPOCHS + 1):
@@ -162,16 +162,20 @@ if __name__ == "__main__":
 
         end_time = time.time()
         val_loss, val_acc, bleu = evaluate(
-            transformer, test_iter, loss_fn, device, de_vocab, en_vocab
+            transformer, valid_iter, loss_fn, device, de_vocab, en_vocab
         )
         #     scheduler.step()
+        if train_loss< min_train_loss:
+            min_train_loss = train_loss
+            transformer.eval()
+            torch.save(transformer, model_name + "-best_train_loss.pth.tar")
 
         if val_loss < min_val_loss:
             min_val_loss = val_loss
             transformer.eval()
-            torch.save(transformer, model_name + "-best.pth.tar")
+            torch.save(transformer, model_name + "-best_valid_loss.pth.tar")
 
-        if epoch % 20 == 0:
+        if epoch % 50 == 0:
             transformer.eval()
             torch.save(transformer, model_name + "-ckpt-" + str(epoch) + ".pth.tar")
 
@@ -187,16 +191,16 @@ if __name__ == "__main__":
 
     with open("./result/train_loss.txt", "w") as file:
         for item in train_loss_curve:
-            file.write(item + "\n")
+            file.write(str(item) + "\n")
     with open("./result/train_acc.txt", "w") as file:
         for item in train_acc_list:
-            file.write(item + "\n")
+            file.write(str(item) + "\n")
     with open("./result/val_loss.txt", "w") as file:
         for item in val_loss_curve:
-            file.write(item + "\n")
+            file.write(str(item) + "\n")
     with open("./result/val_acc.txt", "w") as file:
         for item in val_acc_list:
-            file.write(item + "\n")
+            file.write(str(item) + "\n")
 
     print("min val loss:", min_val_loss)
     plt.plot(train_loss_curve)
