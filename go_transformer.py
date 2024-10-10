@@ -23,7 +23,7 @@ parser.add_argument(
     "--head", type=int, default=8, help="head numbers of multihead attention layer"
 )
 parser.add_argument("--dropout", type=float, default=0.1, help="dropout rate")
-parser.add_argument("--epoch", type=int, default=1000, help="training epoch numbers")
+parser.add_argument("--epoch", type=int, default=100, help="training epoch numbers")
 parser.add_argument("--lr", type=float, default=0.0001, help="learning rate")
 parser.add_argument(
     "--fre", type=int, default=2, help="min frequencies of words in vocabulary"
@@ -59,22 +59,33 @@ if __name__ == "__main__":
     # train_pths = ("train.en", "train.de")
     # val_pths = ("val.en", "val.de")
     # test_pths = ("test_2016_flickr.en", "test_2016_flickr.de")
+    # 
+    # train_filepaths = [(pth_base + pth) for pth in train_pths]
+    # val_filepaths = [(pth_base + pth) for pth in val_pths]
+    # test_filepaths = [(pth_base + pth) for pth in test_pths]
+
+    # de_tokenizer = get_tokenizer("spacy", language="de_core_news_sm")
+    # en_tokenizer = get_tokenizer("spacy", language="en_core_web_sm")
+
+    # de_vocab = build_vocab(train_filepaths[1], de_tokenizer, min_freq=args.fre)
+    # en_vocab = build_vocab(train_filepaths[0], en_tokenizer, min_freq=args.fre)
 
     data_len = 256 # 数据长度
     pth_base = '/home/nx/ycy/GraphLLM/data/iwslt/tokenized/'
     train_pths = ("{}_train.en".format(data_len), "{}_train.de".format(data_len))
     val_pths = ("{}_valid.en".format(data_len), "{}_valid.de".format(data_len))
     test_pths = ("{}_test.en".format(data_len), "{}_test.de".format(data_len))
+    vocab_pths = ["{}_vocab.en".format(data_len), "{}_vocab.de".format(data_len)]
 
     train_filepaths = [(pth_base + pth) for pth in train_pths]
     val_filepaths = [(pth_base + pth) for pth in val_pths]
     test_filepaths = [(pth_base + pth) for pth in test_pths]
+    # vocab_filepaths = [(pth_base + pth) for pth in vocab_pths]
 
-    de_tokenizer = get_tokenizer("spacy", language="de_core_news_sm")
     en_tokenizer = get_tokenizer("spacy", language="en_core_web_sm")
+    de_tokenizer = get_tokenizer("spacy", language="de_core_news_sm")
 
-    de_vocab = build_vocab(train_filepaths[1], de_tokenizer, min_freq=args.fre)
-    en_vocab = build_vocab(train_filepaths[0], en_tokenizer, min_freq=args.fre)
+    en_vocab, de_vocab = load_vocab(vocab_name=vocab_pths,root=pth_base)
 
     train_data = sen2tensor(
         train_filepaths, en_vocab, de_vocab, en_tokenizer, de_tokenizer
@@ -160,7 +171,7 @@ if __name__ == "__main__":
             transformer.eval()
             torch.save(transformer, model_name + "-best.pth.tar")
 
-        if epoch % 50 == 0:
+        if epoch % 20 == 0:
             transformer.eval()
             torch.save(transformer, model_name + "-ckpt-" + str(epoch) + ".pth.tar")
 
@@ -194,6 +205,15 @@ if __name__ == "__main__":
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend(("train loss", "val loss"))
-    plt.savefig("./images/" + model_name.split(sep="/")[-1] + ".png")
+    plt.savefig("./images/" + model_name.split(sep="/")[-1] + "_loss.png")
+    
+    plt.figure(figsize=(8,5))
+    plt.plot(train_acc_list)
+    plt.plot(val_acc_list)
+    plt.grid()
+    plt.xlabel("Epoch")
+    plt.ylabel("Acc")
+    plt.legend(("train acc", "val acc"))
+    plt.savefig("./images/" + model_name.split(sep="/")[-1] + "_acc.png")
     transformer.eval()
     torch.save(transformer, model_name + ".pth.tar")

@@ -1,3 +1,5 @@
+import collections
+import os
 import torch
 from collections import Counter
 from torchtext.vocab import Vocab
@@ -215,7 +217,23 @@ def build_vocab(vocab_pth, tokenizer, min_freq=1):
     return Vocab(
         count, min_freq=min_freq, specials=["<unk>", "<pad>", "<bos>", "<eos>"]
     )
-
+def load_vocab(vocab_name=["vocab.en", "vocab.de"], root="."):
+        if not isinstance(vocab_name, list) or isinstance(vocab_name, tuple):
+            vocab_name = [vocab_name]
+        rst_vocab = []
+        for vocab_name_i in vocab_name:
+            counter = collections.Counter()
+            with open((root+vocab_name_i), "r") as f:
+                for line in f:
+                    word, freq = line.split()
+                    counter[word] = int(freq)
+            rst_vocab.append(
+                Vocab(
+                    counter,
+                    specials=['<bos>', '<eos>', '<unk>', '<pad>'],
+                )
+            )
+        return rst_vocab[0], rst_vocab[1]
 
 def sen2tensor(filepaths, src_vocab, tgt_vocab, src_tokenizer, tgt_tokenizer):
     raw_de_iter = iter(open(filepaths[0], encoding="utf8"))

@@ -6,7 +6,7 @@ import argparse
 import time
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--model", type=str, default="transformer-6-5-2-best", help="model name")
+parser.add_argument("--model", type=str, default="256-transformer-best", help="model name")
 parser.add_argument("--fre", type=int, default=2, help="min frequencies of words in vocabulary")
 parser.add_argument("--mode", type=str, default="greedy", help="greedy search or beam search")
 
@@ -33,21 +33,30 @@ model.eval()
 # val_pths = ('val.en', 'val.de')
 # test_pths = ('test_2016_flickr.en', 'test_2016_flickr.de')
 
+# train_filepaths = [(pth_base + pth) for pth in train_pths]
+# test_filepaths = [(pth_base + pth) for pth in test_pths]
+
+# de_tokenizer = get_tokenizer('spacy', language='de_core_news_sm')
+# en_tokenizer = get_tokenizer('spacy', language='en_core_web_sm')
+
+# de_vocab = build_vocab(train_filepaths[1], de_tokenizer, min_freq=args.fre)
+# en_vocab = build_vocab(train_filepaths[0], en_tokenizer, min_freq=args.fre)
 
 data_len = 256 # 数据长度
 pth_base = '/home/nx/ycy/GraphLLM/data/iwslt/tokenized/'
 train_pths = ("{}_train.en".format(data_len), "{}_train.de".format(data_len))
 val_pths = ("{}_valid.en".format(data_len), "{}_valid.de".format(data_len))
 test_pths = ("{}_test.en".format(data_len), "{}_test.de".format(data_len))
+vocab_pths = ["{}_vocab.en".format(data_len), "{}_vocab.de".format(data_len)]
 
 train_filepaths = [(pth_base + pth) for pth in train_pths]
 test_filepaths = [(pth_base + pth) for pth in test_pths]
 
+
 de_tokenizer = get_tokenizer('spacy', language='de_core_news_sm')
 en_tokenizer = get_tokenizer('spacy', language='en_core_web_sm')
 
-de_vocab = build_vocab(train_filepaths[1], de_tokenizer, min_freq=args.fre)
-en_vocab = build_vocab(train_filepaths[0], en_tokenizer, min_freq=args.fre)
+en_vocab, de_vocab = load_vocab(vocab_name=vocab_pths,root=pth_base)
 
 BOS_IDX = en_vocab['<bos>']
 EOS_IDX = en_vocab['<eos>']
